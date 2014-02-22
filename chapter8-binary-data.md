@@ -1,3 +1,8 @@
+<style>
+table th {
+    width:200px;
+}
+</style>
 [TOC]
 
 ## 判定字节顺序
@@ -256,4 +261,412 @@ console.log(view1.byteLength); // 4
 console.log(view2.byteLength); // 16
 ```
 
-[^1]: Node中Buffer类型的slice()方法和JavaScript的ArrayBuffer类型的slice方法在语义上有很大的区别,Node中Buffer类型的slide()返回的是一个引用(类似指针),对其修改将会同时修改原始的Buffer对象, 而ArrayBuffer通过slice()方法调用创建的是一个全新的ArrayBuffer对象,此对象拥有独立的内存空间,使用的时候请特别注意这两者的区别.
+#### View属性
+
+You’ve already seen that a view’s `ArrayBuffer` can be accessed via the buffer property and that the `BYTES_PER_ELEMENT` property represents the number of bytes per view element. Views also have two properties, `byteLength` and length, related to the data size, and a `byteOffset` property indicating the first byte of a buffer used by the view.
+
+#### byteLength
+The `byteLength` property represents the view’s data size in bytes. This value is not necessarily equal to the `byteLength` property of the underlying `ArrayBuffer`. In the example of this case, shown in Listing 8-21, an `Int16Array` view is built from a 10-byte `ArrayBuffer`. However, because the `Int16Array` constructor specifies that it is to contain only two integers, its `byteLength` property is 4, while the `ArrayBuffer`’s `byteLength` is 10.
+
+清单 8-21. Differing byteLengths of a View and Its ArrayBuffer
+
+```javascript`
+var buf = new ArrayBuffer(10);
+var view = new Int16Array(buf, 0, 2);
+console.log(buf.byteLength);
+console.log(view.byteLength);
+```
+
+#### length
+The length property, which works like that of a standard array, indicates the number of data elements in the view.This property is useful for looping over the view’s data, as shown in Listing 8-22. 
+
+清单 8-22. Looping over View Data Using the length Property var view = new Int32Array([5, 10]);
+
+```javascript`
+for (var i = 0, len = view.length; i < len; i++) {
+    console.log(view[i]);
+}
+```
+
+#### byteOffset
+
+The `byteOffset` property specifies the offset into the `ArrayBuffer` corresponding to the first byte used by the view.This value is always 0, unless an offset was passed in as the second argument to the constructor (see Listing 8-17).The byteOffset can be used in conjunction with the byteLength property to loop over the bytes of the underlying `ArrayBuffer`. In the example in Listing 8-23, which shows how only the bytes used by a view can be looped over using `byteOffset` and byteLength, the source `ArrayBuffer` is 10 bytes long, but the view only uses bytes 4 through 7.
+
+清单 8-23. Looping over the Utilized Subset of Bytes in an ArrayBuffer
+
+```javascript
+var buf = new ArrayBuffer(10);
+var view = new Int16Array(buf, 4, 2);
+var len = view.byteOffset + view.byteLength;
+view[0] = 100;
+view[1] = 256;
+for (var i = view.byteOffset; i < len; i++) {
+    console.log(buf[i]);
+}
+```
+
+#### get()
+
+The `get()` method is used to retrieve the data value at a given index in the view. However, as you’ve already seen, the same task can be accomplished using array index notation, which requires fewer characters. If you elect to use `get()` for whatever reason, an example of its usage is shown in Listing 8-24.
+
+清单 8-24. Using the View get() Method
+
+```javascript`
+var view = new Uint8ClampedArray([5]);
+console.log(view.get(0));
+// could also use view[0]
+```
+
+#### set()
+`set()` is used to assign one or more values in the view. To assign a single value, pass the index to write, followed by the value to write as an argument to set() (you can also accomplish this using array index notation). An example assigning the value 3.14 to the fourth view element is shown in Listing 8-25.
+
+清单 8-25. Assigning a Single Value Using set()
+
+```javascript`
+var view = new Float64Array(4);
+view.set(3, 3.14);
+// could also use view[3] = 3.14
+```
+
+In order to assign multiple values, `set()` also accepts arrays and views as its first argument. Optionally use this form of `set()` to provide a second argument that specifies the offset to begin writing values. If this offset is not included, `set()` begins writing values at the first index. In Listing 8-26, set() is used to populate all four elements of
+an `Int32Array`.
+
+清单 8-26. Assigning Multiple Values Using set()
+
+```javascript`
+var view = new Int32Array(4);
+view.set([1, 2, 3, 4], 0);
+```
+
+There are two important things to know about this version of `set()`. First, an exception is thrown if you attempt to write past the end of the view. In the example in Listing 8-26, if the second argument had been larger than 0, the four-element boundary would have been exceeded, resulting in an error. Second, note that because `set()` accepts a view as its first argument, the argument’s `ArrayBuffer` might possibly be shared with the calling object. If the source and destination are the same, Node must intelligently copy the data such that bytes are not overwritten before they’ve had a chance to be copied. Listing 8-27 is an example of a scenario where two `Int8Array` views have the same `ArrayBuffer`. The second view, `view2`, is also smaller, representing the first half of the larger view, `view1`. When the call to `set()` occurs, 0 is assigned to **view1[1]**, and 1 is assigned to **view1[2]**. Since view1[1] is part of the source (as well as the destination in this operation), you need to ensure that the original value is copied before it is overwritten. 
+
+清单 8-27. Showing Where a Single **ArrayBuffer** Is Shared in **set()**
+
+```javascript`
+var buf = new ArrayBuffer(4);
+var view1 = new Int8Array(buf);
+var view2 = new Int8Array(buf, 0, 2);
+view1[0] = 0;
+view1[1] = 1;
+view1[2] = 2;
+view1[3] = 3;
+view1.set(view2, 1);
+console.log(view1.buffer);
+```
+
+According to the specification, "**setting the values takes place as if all the data is first copied into a temporary buffer that does not overlap either of the arrays, and then the data from the temporary buffer is copied into the current array**." Essentially, this means that Node takes care of everything for you. To verify this, the resulting output from the previous example is shown in Listing 8-28. Notice that bytes 1 and 2 hold the correct values of 0 and 1. 
+
+清单 8-28. The Output from Running the Code in Listing 8-27
+
+```javascript`
+{ 
+    '0': 0,
+    '1': 0,
+    '2': 1,
+    '3': 3,
+    slice: [Function: slice],
+    byteLength: 4 
+}
+```
+
+#### subarray()
+
+`subarray()`, which returns a new view of the data type that relies on the same `ArrayBuffer`, takes two arguments.The first argument specifies the first index to be referenced in the new view. The second, which is optional, represents the last index to be referenced in the new view. If the ending index is omitted, the new view’s span goes from the start index to the end of the original view. Either index can be negative, meaning that the offset is computed from the end of the data array. Note that the new view returned by `subarray()` has the same `ArrayBuffer` as the original view. Listing 8-29 shows how `subarray()` is used to create several identical `Uint8ClampedArray` views making up a subset of another.
+
+清单 8-29. Using subarray() to Create New Views from an Existing One
+
+```javascript`
+var view1 = new Uint8ClampedArray([1, 2, 3, 4, 5]);
+var view2 = view1.subarray(3, view1.length);
+var view3 = view1.subarray(3);
+var view4 = view1.subarray(-2);
+```
+
+## Node Buffers
+
+Node provides its own `Buffer` data type for working with binary data. This is the preferred method of processing binary data in Node because it is slightly more efficient than typed arrays. Up to this point, you have encountered a number of methods that work with `Buffer` objects—for example, the fs module’s `read()` and `write()` methods. This section explores in detail how `Buffers` work, including their compatibility with the typed array specification.
+
+### The Buffer Constructor
+
+`Buffer` objects are created using one of the three `Buffer()` constructor functions. The `Buffer` constructor is global,meaning that it can be called without requiring any modules. Once a `Buffer` is created, it cannot be resized. The first form of the `Buffer`() constructor creates an empty `Buffer` of a given number of bytes. The example in Listing 8-30, which creates an empty 4-byte `Buffer`, also demonstrates that individual bytes within the `Buffer` can be accessed using array subscript notation.
+
+清单 8-30. Creating a 4-Byte Buffer and Accessing Individual Bytes
+
+```javascript`
+var buf = new Buffer(4);
+buf[0] = 0;
+buf[1] = 1;
+console.log(buf);
+```
+
+Listing 8-31 shows the stringified version of the `Buffer`. The first two bytes in the `Buffer` hold the values 00 and 01,
+which were individually assigned in the code. Notice that the final two bytes also have values, although they were never
+assigned. These are actually the values already in memory when the program ran (if you run this code, the values you
+see will likely differ), indicating that the `Buffer()` constructor does not initialize the memory it reserves to 0. This is
+done intentionally—to save time when requesting a large amount of memory (recall that the `ArrayBuffer` constructor
+initializes its buffer to 0). As `ArrayBuffer`s are commonly used in web browsers, leaving the memory uninitialized could
+be a security hazard—you probably wouldn’t want arbitrary web sites to read the contents of your computer’s memory.
+Since the `Buffer` type is specific to Node, it isn’t subject to the same security risks.
+
+Listing 8-31. The Output Resulting from Running the Code in Listing 8-30
+
+```javascript
+$ node buffer-constructor-1.js
+<Buffer 00 01 05 02>
+```
+
+The second form of the `Buffer()` constructor accepts an array of bytes as its only argument. The resulting `Buffer` is populated with the values stored in the array. An example of this form of the constructor is shown in Listing 8-32.
+
+Listing 8-32. Creating a `Buffer` from an Array of Octets
+
+```javascript`
+var buf = new Buffer([1, 2, 3, 4]);
+```
+
+The final version of the constructor is used to create a `Buffer` from string data. The code in Listing 8-33 shows how a `Buffer` is created from the string "`foo`".
+
+Listing 8-33. Creating a Buffer from a String
+
+```javascript
+var buf = new Buffer("foo");
+```
+
+Earlier in this chapter, you learned that in order to convert from binary data to text, a character encoding must be specified. When a string is passed as the first argument to `Buffer()`, a second optional argument can be used to specify the encoding type. In Listing 8-33, no encoding is explicitly set, so UTF-8 is used by default. Table 8-2 breaks down the various character encodings supported by Node. (The astute reader might recognize this table from Chapter 5. However, it is worth repeating the information at this point in the book.) 
+
+表格 8-2. The Various String Encoding Types Supported by Node 
+
+
+Encoding Type   | Description
+--------------  | -----------
+utf8            | Multibyte encoded Unicode characters. UTF-8 encoding is used by many web pages and to
+represent       | string data in Node.
+ascii           | 7-bit American Standard Code for Information Interchange (ASCII) encoding.
+utf16le         | Little-endian-encoded Unicode characters. Each character is 2 or 4 bytes.
+ucs2            | This is simply an alias for utf16le encoding.
+base64          | Base64 string encoding. Base64 is commonly used in URL encoding, e-mail, and similar applications.
+binary          | 允许二进制数据只使用每个字符的前8位编码为字符串As this is deprecated in favor of the Buffer object, 将会在Node的后续版本删除.
+hex             | Encodes each byte as two hexadecimal characters.
+
+### Stringification Methods
+
+Buffers can be stringified in two ways. The first uses the `toString()` method, which attempts to interpret the contents of the `Buffer` as string data. The `toString()` method accepts three arguments, all optional. They specify the character encoding and the starting and ending indexes of the Buffer to stringify. If unspecified, the entire Buffer is stringified using UTF-8 encoding. The example in Listing 8-34 stringifies an entire Buffer using `toString()`.
+
+清单 8-34. Using the Buffer.toString() Method
+
+```javascript
+var buf = new Buffer("foo");
+console.log(buf.toString());
+```
+
+The second stringification method, `toJSON()`, returns the Buffer data as a JSON array of bytes. You get a similar result by calling `JSON.stringify()` on the `Buffer` object. Listing 8-35 shows an example of the `toJSON()` method. 
+
+清单 8-35. Using the Buffer.toJSON() Method
+
+```javascript
+var buf = new Buffer("foo");
+console.log(buf.toJSON());
+console.log(JSON.stringify(buf));
+```
+
+### Buffer.isEncoding()
+The `isEncoding()` method is a class method (i.e., a specific instance is not needed to invoke it) that accepts a string as its only argument and returns a Boolean indicating whether the input is a valid encoding type. Listing 8-36 shows two examples of `isEncoding()`. The first tests the string "`utf8`" and displays true. The second, however, prints false because "`foo`" is not a valid character encoding. 
+
+清单 8-36. Two Examples of the Buffer.isEncoding() Class Method
+
+```javascript`
+console.log(Buffer.isEncoding("utf8"));
+console.log(Buffer.isEncoding("foo"));
+```
+
+### Buffer.isBuffer()
+
+The class method `isBuffer()` is used to determine whether a piece of data is a `Buffer` object. It is used in the same fashion as the `Array.isArray()` method. Listing 8-37 shows an example use of `isBuffer()`. This example prints true because the buf variable is, in fact, a `Buffer`. 
+
+清单 8-37. The Buffer.isBuffer() Class Method
+
+```javascript`
+var buf = new Buffer(1);
+console.log(Buffer.isBuffer(buf));
+```
+
+### Buffer.byteLength() and length
+
+The `byteLength()` class method is used to calculate the number of bytes in a given string. This method also accepts an optional second argument to specify the string’s encoding type. This method is useful for calculating byte lengths without actually instantiating a `Buffer` instance. However, if you have already constructed a `Buffer`, its length property serves the same purpose. In the example in Listing 8-38, which shows `byteLength()` and length, `byteLength()` is used to calculate the byte length of the string "`foo`" with UTF-8 encoding. Next, an actual `Buffer` is constructed from the same string. The `Buffer`’s length property is then used to inspect the byte length.
+
+清单 8-38. Buffer.byteLength() and the length Property
+
+```javascript
+var byteLength = Buffer.byteLength("foo");
+var length = (new Buffer("foo")).length;
+console.log(byteLength);
+console.log(length);
+```
+
+
+fill()
+There are a number of ways to write data to a `Buffer`. The appropriate method can depend on several factors,including the type of data and its endianness. The simplest method, `fill()`, which writes the same value to all or part of a `Buffer`, takes three arguments—the value to write, an optional offset to start filling, and an optional offset to stop filling. As with the other writing methods, the starting offset defaults to 0, and the ending offset defaults to the end of the Buffer. Since a `Buffer` is not set to zero by default, `fill()` is useful for initializing a Buffer to a value. The example in Listing 8-39 shows how all the memory in a `Buffer` can be zeroed out.
+
+Listing 8-39. Zeroing Out the Memory in a Buffer Using fill()
+```javascript`
+var buf = new Buffer(1024);
+buf.fill(0);
+```
+
+### write()
+
+To write a string to a `Buffer`, use the `write()` method. It accepts the following four arguments.
+
+- The string to write.
+- The offset to begin writing. This is optional and defaults to index 0.
+- pecified, the entire string is written. However, if the Buffer lacks space for the entire string, it is truncated.
+- The character encoding of the string. If omitted, this defaults to UTF-8.
+
+The example in Listing 8-40 fills a 9-byte `Buffer` with three copies of the string "`foo`". As the first write starts at the beginning of the `Buffer`, an offset is not required. However, the second and third writes require an offset value. In the third, the string length is included though it is not necessary.
+
+清单 8-40. Several Writes to the Same Buffer Using write()
+
+```javascript
+var buf = new Buffer(9);
+var data = "foo";
+buf.write(data);
+buf.write(data, 3);
+buf.write(data, 6, data.length);
+```
+
+### Writing Numeric Data
+There is a collection of methods used to write numeric data to a `Buffer`, each method being used to write a specific type of number. This is analogous to the various typed array views, each of which stores a different type of data.
+
+表格 8-3 lists the methods used to write numbers.
+
+Method Name      | Description
+-------------    | -----------
+writeUInt8()     | Writes an unsigned 8-bit integer.
+writeInt8()      | Writes a signed 8-bit integer.
+writeUInt16LE()  | Writes an unsigned 16-bit integer using little-endian format.
+writeUInt16BE()  | Writes an unsigned 16-bit integer using big-endian format.
+writeInt16LE()   | Writes a signed 16-bit integer using little-endian format.
+writeInt16BE()   | Writes a signed 16-bit integer using big-endian format.
+writeUInt32LE()  | Writes an unsigned 32-bit integer using little-endian format.
+writeUInt32BE()  | Writes an unsigned 32-bit integer using big-endian format.
+writeInt32LE()   | Writes a signed 32-bit integer using little-endian format.
+writeInt32BE()   | Writes a signed 32-bit integer using big-endian format.
+writeFloatLE()   | Writes a 32-bit floating-point number using little-endian format.
+writeFloatBE()   | Writes a 32-bit floating-point number using big-endian format.
+writeDoubleLE()  | Writes a 64-bit floating-point number using little-endian format.
+writeDoubleBE()  | Writes a 64-bit floating-point number using big-endian format.
+
+All the methods in Table 8-3 take three arguments—the data to write, the offset in the `Buffer` to write the data, and an optional flag to turn off validation checking. If the validation flag is set to `false` (the default), an exception is thrown if the value is too large or the data overflows the `Buffer`. If this flag is set to true, large values are truncated, and overflow writes fail silently. In the example using `writeDoubleLE()` in Listing 8-41, the value 3.14 is written to the first 8 bytes of a `Buffer`, with no validation checking. 
+
+清单 8-41. Using writeDoubleLE()
+
+```javascript`
+var buf = new Buffer(16);
+buf.writeDoubleLE(3.14, 0, true);
+```
+
+### Reading Numeric Data
+
+Reading numeric data from a Buffer, like writing, also requires a collection of methods. Table 8-4 lists various
+methods used for reading data. Notice the one-to-one correspondence with the write methods in Table 8-3.
+
+
+Table 8-4. The Collection of Methods Used for Reading Numeric Data from a Buffer
+
+Method Name     | Description
+--------------- | -------------
+readUInt8()     | Reads an unsigned 8-bit integer.
+readInt8()      | Reads a signed 8-bit integer.
+readUInt16LE()  | Reads an unsigned 16-bit integer using little-endian format.
+readUInt16BE()  | Reads an unsigned 16-bit integer using big-endian format.
+readInt16LE()   | Reads a signed 16-bit integer using little-endian format.
+readInt16BE()   | Reads a signed 16-bit integer using big-endian format.
+readUInt32LE()  | Reads an unsigned 32-bit integer using little-endian format.
+readUInt32BE()  | Reads an unsigned 32-bit integer using big-endian format.
+readInt32LE()   | Reads a signed 32-bit integer using little-endian format.
+readInt32BE()   | Reads a signed 32-bit integer using big-endian format.
+readFloatLE()   | Reads a 32-bit floating-point number using little-endian format.
+readFloatBE()   | Reads a 32-bit floating-point number using big-endian format.
+readDoubleLE()  | Reads a 64-bit floating-point number using little-endian format.
+readDoubleBE() | Reads a 64-bit floating-point number using big-endian format.
+
+All the numeric read methods take two arguments. The first is the offset in the Buffer to read the data from. The optional second argument is used to disable validation checking. If it is `false` (the default), an exception is thrown if the offset exceeds the `Buffer` size. If the flag is true, no validation occurs, and the returned data might be invalid.Listing 8-42 shows how a 64-bit floating-point number is written to a buffer and then read back using `readDoubleLE()`.
+
+Listing 8-42. Writing and Reading Numeric Data
+
+```javascript
+var buf = new Buffer(8);
+var value;
+buf.writeDoubleLE(3.14, 0);
+value = buf.readDoubleLE(0);
+```
+
+
+### slice()
+
+The slice() method returns a new `Buffer` that shares memory with the original `Buffer`. In other words, updates to the new `Buffer` affect the original, and vice versa. The `slice()` method takes two optional arguments, representing the starting and ending indexes to slice. The indexes can also be negative, meaning that they are relative to the end of the `Buffer`. Listing 8-43 shows how `slice()` is used to extract the first half of a 4-byte `Buffer`.
+
+Listing 8-43. Using slice() to Create a New Buffer
+
+```javascript
+var buf1 = new Buffer(4);
+var buf2 = buf1.slice(0, 2);
+```
+
+### copy()
+
+The `copy()` method is used to copy data from one `Buffer` to another. The first argument to `copy()` is the destination Buffer. The second, if present, represents the starting index in the target to copy. The third and fourth arguments, if present, are the starting and ending indexes in the source `Buffer` to copy. An example that copies the full contents of one `Buffer` to another is shown in Listing 8-44. 
+
+清单 8-44. Copying the Contents of One Buffer to Another Using copy()
+
+```javascript
+var buf1 = new Buffer([1, 2, 3, 4]);
+var buf2 = new Buffer(4);
+buf1.copy(buf2, 0, 0, buf1.length);
+```
+
+
+### Buffer.concat()
+The `concat()` class method allows concatenation of multiple `Buffer`s into a single larger `Buffer`. The first argument to concat() is an array of `Buffer` objects to be concatenated. If no `Buffer`s are provided, `concat()` returns a zero-length `Buffer`. If a single `Buffer` is provided, a reference to that `Buffer` is returned. If multiple `Buffer`s are provided, a new `Buffer` is created. Listing 8-45 provides an example that concatenates two `Buffer` objects. 
+
+清单 8-45. Concatenating Two Buffer Objects
+
+```javascript
+var buf1 = new Buffer([1, 2]);
+var buf2 = new Buffer([3, 4]);
+var buf = Buffer.concat([buf1, buf2]);
+console.log(buf);
+```
+
+### Typed Array Compatibility
+
+`Buffer`s are compatible with typed array views. When a view is constructed from a `Buffer`, the contents of the `Buffer` are cloned into a new `ArrayBuffer`. The cloned `ArrayBuffer` does not share memory with the original `Buffer`. In the example in Listing 8-46, which creates a view from a `Buffer`, a 4-byte `Buffer` is cloned into a 16-byte `ArrayBuffer`,which backs a `Uint32Array` view. Notice that the `Buffer` is initialized to all 0s prior to creating the view. Without doing so, the view would contain arbitrary data.
+
+清单 8-46. Creating a View from a Buffer
+
+```javascript`
+var buf = new Buffer(4);
+var view;
+buf.fill(0);
+view = new Uint32Array(buf);
+console.log(buf);
+console.log(view);
+```
+
+It is also worth pointing out that while a view can be constructed from a `Buffer`, `ArrayBuffers` cannot be.
+A `Buffer` also cannot be constructed from an `ArrayBuffer`. A `Buffer` can be constructed from a view, but be cautious when doing so, as the views are likely to contain data that will not transfer well. In the simple example in Listing 8-47 illustrating this point, the integer 257, when moved from a Uint32Array view to a `Buffer`, becomes the byte value 1.
+
+清单 8-47. Data Loss when Constructing a Buffer from a View
+
+```javascript`
+var view = new Uint32Array([257]);
+var buf = new Buffer(view);
+console.log(buf);
+```
+
+## Summary
+
+A lot of material has been covered in this chapter. Starting with an overview of binary data, you were exposed to topics including character encoding and endianness at a high level. From there, the chapter progressed into the typed array specification. Hopefully, you found this material useful. After all, it is part of the JavaScript language and can be used in the browser as well as in Node. After presenting `ArrayBuffers` and views, the chapter moved on to Node’s `Buffer` data type and, finally, looked at how the `Buffer` type works with typed arrays.
+
+[^1]: Node中Buffer类型的slice()方法和JavaScript的`ArrayBuffer`类型的slice方法在语义上有很大的区别,Node中Buffer类型的slide()返回的是一个引用(类似指针),对其修改将会同时修改原始的Buffer对象, 而`ArrayBuffer`通过slice()方法调用创建的是一个全新的`ArrayBuffer`对象,此对象拥有独立的内存空间,使用的时候请特别注意这两者的区别.
+
+
