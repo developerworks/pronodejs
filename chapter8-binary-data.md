@@ -7,33 +7,34 @@ table th {
 
 ## 判定字节顺序
 
-`os`核心模块提供了一个方法`endianness()`,用于判断当前机器的字节顺序.`endianness()`是一个无参数函数,返回一个字符串表示当前机器的字节顺序. 如果当前机器为大端字节顺序`endianness()`返回"`BE`", 如果为小端字节顺序则放回`LE`.清单8-5 中的实例调用`endianness()`并在控制台中打印出结果
+`os` 核心模块提供了一个方法 `endianness()`, 用于判断当前机器的字节顺序.`endianness()`是一个无参数函数,返回一个字符串表示当前机器的字节顺序. 如果当前机器为大端字节顺序 `endianness()` 返回 **BE**, 如果为小端字节顺序则返回 **LE**. [清单8-5](#listing-8-5) 中的示例调用 `endianness()` 并在控制台中打印出结果
 
-清单 8-5. 使用`os.endianness()`方法判定一个机器的字节顺序
+清单 8-5: 使用 `os.endianness()` 方法判定一个机器的字节顺序
 
-```javascript
+```javascript {#listing-8-5}
 var os = require("os");
 console.log(os.endianness());
 ```
     
-## 类型化的数组规范(Typed Array Specification)
+## 8.2 类型化的数组规范(Typed Array Specification)
 
-在阐述Node中的二进制数据处理方式之前,先来了解一下标准的Javascript是如何处理二进制数据的.这种方式被成为Typed Array Specification, 和普通的JavaScript变量不同,二进制数据数组有一个在运行时不能改变的类型,因为Typed Array Specification作为JavaScript语言的一部分, 它是能在大多数浏览器中工作的, 具体要看浏览器是否实现了这个特性.
+在阐述Node中的二进制数据处理方式之前,先来了解一下标准的Javascript是如何处理二进制数据的. 这种方式被成为Typed Array Specification, 和普通的JavaScript变量不同,二进制数据数组有一个在运行时不能改变的类型, 因为Typed Array Specification作为JavaScript语言的一部分, 它是能在大多数浏览器中工作的, 具体要看浏览器是否实现了这个特性.
 
-### ArrayBuffers
+### 8.2.1 ArrayBuffers
 
-JavaScript的二进制数据API包括两部分: 一个Buffer, 以及一个View, Buffer是通过`ArrayBuffer`数据类型来实现的, 它是一个通用容器, 用来存储字节数组. ArrayBuffer是一个固定长度的结构, 一旦创建便不能再修改它的大小. ArrayBuffer通过构造函数ArrayBuffer()创建. 下面的示例创建了一个**内存空间占用**为1024字节的ArrayBuffer
+JavaScript的二进制数据API包括两部分: 一个Buffer, 以及一个View, Buffer是通过 `ArrayBuffer` 数据类型来实现的, 它是一个通用容器, 用来存储字节数组. `ArrayBuffer` 是一个固定长度的结构, 一旦创建便不能再修改它的大小. `ArrayBuffer` 通过构造函数 `ArrayBuffer()` 创建. [清单8-6](#listing-8-6) 中的示例创建了一个 **内存空间占用** 为 **1024** 字节的 `ArrayBuffer`
 
-清单 8-6 创建一个1024字节的`ArrayBuffer`
-```javascript
+清单 8-6: 创建一个1024字节的`ArrayBuffer`
+
+```javascript {#listing-8-6}
 var buffer = new ArrayBuffer(1024);
 ```
     
-ArrayBuffer的工作方式类似与普通的Javascript数组.使用数组下标读写单个字节.因为ArrayBuffer不能修改大小,向**不存在的数组索引**写数据不会实际修改底层的数据结构, 这个错误会被JavaScript引擎自动忽略, 来看下面的代码
+`ArrayBuffer` 的工作方式类似与普通的Javascript数组.使用数组下标读写单个字节.因为 `ArrayBuffer` 不能修改大小, 向 **不存在的数组索引** 写数据不会实际修改底层的数据结构, 这个错误会被JavaScript引擎自动忽略, 来看下面 [清单8-7](#listing-8-7) 中的代码
 
-代码 8-7: 写入ArrayBuffer并输出结果
+清单 8-7: 写入ArrayBuffer并输出结果
 
-```javascript
+```javascript {#listing-8-7}
 var buffer = ArrayBuffer(2);
 buffer[0] = 0x01;
 buffer[1] = 0x02;
@@ -42,17 +43,17 @@ buffer[2] = 0x03
 
 这段代码创建了一个长度为2字节的二进制数据变量buffer, 我向buffer[2]写入了一个值0x03, 下面我们在控制台中输出这个buffer的值.
 
-代码 8-8: 显示代码8-7的结果
+清单 8-8: 显示代码8-7的结果
 
-```javascript
+```javascript {#listing-8-8}
 console.log(buffer);
 { '0': 1, '1': 2, slice: [Function: slice], byteLength: 2 }
 ```
 
-在控制台输出中,我们注意到`byteLength`为2, 它表示ArrayBuffer的字节长度, 这个值在ArrayBuffer创建时就被固定不能改变了,类似与数组的length属性, byteLength可以用于遍历ArrayBuffer的内容
+在控制台输出中,我们注意到`byteLength`为2, 它表示ArrayBuffer的字节长度, 这个值在ArrayBuffer创建时就被固定不能改变了,类似于数组的length属性, byteLength可以用于遍历ArrayBuffer的内容
 
 
-清单 8-9: 用byteLength属性遍历显示ArrayBuffer的每一个字节
+清单 8-9: 用byteLength属性遍历ArrayBuffer的每一个字节
     
 ```javascript
 var foo = new ArrayBuffer(4);
@@ -65,9 +66,9 @@ for (var i = 0, len = foo.byteLength; i < len; i++) {
 }
 ```
     
-#### Slice()
+#### 8.2.1.1 Slice()
 
-可以使用`ArrayBuffer.slice(int start, int end)`方法抽取ArrayBuffer的内容拷贝一个新的ArrayBuffer, slice()方法有两个参数:起始位置(包括)和结束位置(不包括), 这两个参数定义了要拷贝的范围
+可以使用`ArrayBuffer.slice(int start, int end)`方法从ArrayBuffer拷贝一个新的ArrayBuffer, slice()方法有两个参数:起始位置(包括)和结束位置(不包括), 这两个参数定义了要拷贝的范围
 
 清单 8-10: 使用`slice()`方法创建一个全新的ArrayBuffer对象
 
@@ -84,11 +85,11 @@ console.log(foo.slice(-2));
 // 上面四种调用方式获得相同的结果: [2,3]
 ```
 
-要注意的是slice()方法返回的是原始数据的一个拷贝.因此修改slide()返回的buffer对象**不会**修改原始数据, 这与Node中Buffer对象的实现方式不同[^1], 请参考清单8-11.
+要注意的是slice()方法返回的是原始数据的一个拷贝.因此修改slide()返回的buffer对象 **不会** 修改原始数据, 这与Node中Buffer对象的实现方式不同[^1], 请参考 [清单8-11](#listing-8-11).
 
 清单 8-11: 使用**slice()**方法创建一个全新的ArrayBuffer对象
 
-```javascript
+```javascript {#listing-8-11}
 var bytes = new ArrayBuffer(4);
 var bar;
 bytes[0] = 0;
@@ -101,33 +102,39 @@ bar[0] = 0xc;
 console.log(foo);
 console.log(bar);
 ```
+
 名为foo的ArrayBuffer被创建并填充数据. 然后复制整个foo的内容到bar,然后修改bar的第一个字节,最后在控制台中输出foo和bar的内容,清单8-12显示了输出结果, 注意这两个buffer第一个字节的差异.
 
-清单 8-12: 运行清单8-11的输出
+清单 8-12: 运行[清单8-11](#listing-8-11)的输出
 
-```javascript  
-{ '0': 0,
-  '1': 1,
-  '2': 2,
-  '3': 3,
-  slice: [Function: slice],
-  byteLength: 4 }
-{ '0': 12,
-  '1': 1,
-  '2': 2,
-  '3': 3,
-  slice: [Function: slice],
-  byteLength: 4 }
+```javascript {#listing-8-11}
+{ 
+    '0': 0,
+    '1': 1,
+    '2': 2,
+    '3': 3,
+    slice: [Function: slice],
+    byteLength: 4 
+}
+{ 
+    '0': 12,
+    '1': 1,
+    '2': 2,
+    '3': 3,
+    slice: [Function: slice],
+    byteLength: 4 
+}
 ```  
 
 ### ArrayBuffer Views
 
-直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, 下面给出一个示例来删除View是如何工作的
+直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来删除View是如何工作的
 
 
-表格 8-1. JavaScript’的个中ArrayBuffer View描述
+表格 8-1: JavaScript’的个中ArrayBuffer View描述 
 
-View Type         | Element Size (Bytes) | Description
+<span id="table-8-1"></span>
+View Type         | Element Size (Bytes) | Description 
 ------------------| -------------------- | -----------
 Int8Array         | 1                    | Array of 8-bit signed integers.
 Uint8Array        | 1                    | Array of 8-bit unsigned integers.
@@ -138,6 +145,8 @@ Int32Array        | 4                    | Array of 32-bit signed integers.
 Uint32Array       | 4                    | Array of 32-bit unsigned integers.
 Float32Array      | 4                    | Array of 32-bit IEEE floating point numbers.
 Float64Array      | 8                    | Array of 64-bit IEEE floating-point numbers.
+{#table-8-1}
+
 
 **Note**
 
@@ -146,7 +155,7 @@ Float64Array      | 8                    | Array of 64-bit IEEE floating-point n
 
 清单 8-13: `Uint32Array` 示例
 
-```javascript  
+```javascript {#listing-8-13}
 var buf = new ArrayBuffer(8);
 var view = new Uint32Array(buf);
 view[0] = 100;
@@ -154,9 +163,11 @@ view[1] = 256;
 console.log(view);
 ```
 
-清单8-14显示了输出结果(我对结果作了一下格式化,使代码更加工整一些),头两行显示了写入到View中的值,100,256.接下来是一个`BYTES_PER_ELEMENT`属性,这是一个只读属性,包含在每个View对象中,表示View中的每个元素的原始字节长度,紧接着`BYTES_PER_ELEMENT`的是几个View对象的方法.
+[清单8-14](#listing-8-14) 显示了输出结果(我对结果作了一下格式化,使代码更加工整一些),头两行显示了写入到View中的值,100,256.接下来是一个`BYTES_PER_ELEMENT`属性,这是一个只读属性,包含在每个View对象中,表示View中的每个元素的原始字节长度,紧接着`BYTES_PER_ELEMENT`的是几个View对象的方法.
 
-```javascript  
+清单 8-14: 运行[清单8-13](#listing-8-13)的输出
+
+```javascript {#listing-8-14}
 { 
     '0': 100,
     '1': 256,
@@ -189,11 +200,11 @@ console.log(view);
 
 **256** 等同于 **2<sup>8</sup>**, 它不能用单个字节表示. 单个字节都能够表示的最大值为 **255**, 因此256的16进制表示为 **01 00**
 
-和`ArrayBuffer`的`slice()`方法不同的是, slice()方法返回的是一个对原始ArrayBuffer数据的一个全新拷贝, 而View则是直接操作底层的`ArrayBuffer`对象.修改View的值会直接修改底层ArrayBuffer对象的值.Also, two views having the same ArrayBuffer can accidentally (or intentionally) change each other’s values.清单8-15中的示例所示: 一个包含4字节的ArrayBuffer,由一个`Uint32Array`的View和一个`Uint8Array`的View共享.首先写入值 **100** 到`Uint32Array`,然后输出,再写入值 **1** 到`Uint8Array`的第二个字节,再次输出`Uint32Array`:
+和`ArrayBuffer`的`slice()`方法不同的是, slice()方法返回的是一个对原始ArrayBuffer数据的一个全新拷贝, 而View则是直接操作底层的`ArrayBuffer`对象.修改View的值会直接修改底层ArrayBuffer对象的值.Also, two views having the same ArrayBuffer can accidentally (or intentionally) change each other’s values.[清单8-15](#listing-8-15)中的示例所示: 一个包含4字节的ArrayBuffer,由一个`Uint32Array`的View和一个`Uint8Array`的View共享.首先写入值 **100** 到`Uint32Array`,然后输出,再写入值 **1** 到`Uint8Array`的第二个字节,再次输出`Uint32Array`:
 
 清单 8-15: View之间的相互影响
 
-```javascript
+```javascript {#listing-8-15}
 var buf = new ArrayBuffer(4);
 var view1 = new Uint32Array(buf);
 var view2 = new Uint8Array(buf);
@@ -205,9 +216,11 @@ view2[1] = 1;
 console.log("Uint32 = " + view1[0]);
 ```
 
-清单 8-16. 运行清单 8-15 的输出结果, 果不其然, 第一个print语句显示的值为**100**, 第二条语句执行时, 该值增加到 **356**, 在此例中, 为了演示这种副作用,这个行为是我们所期望的, 但是在更加复杂的应用程序中, 当在`ArrayBuffer`上创建多个`View`的时候,必须谨小慎微.
+[清单8-16](#listing-8-16). 运行清单 8-15 的输出结果, 果不其然, 第一个print语句显示的值为**100**, 第二条语句执行时, 该值增加到 **356**, 在此例中, 为了演示这种副作用,这个行为是我们所期望的, 但是在更加复杂的应用程序中, 当在`ArrayBuffer`上创建多个`View`的时候,必须谨小慎微.
 
-```javascript
+清单 8-16. 运行[清单8-15](#listing-8-15)中代码的输出
+
+```javascript {#listing-8-16}
 Uint32 = 100
 Uint32 = 356
 ```
@@ -221,7 +234,7 @@ Uint32 = 356
 
 清单 8-17. 构造一个基于ArrayBuffer部分数据的View 
 
-```javascript`
+```javascript` {#listing-8-17}
 var buf = new ArrayBuffer(5);
 var view = new Int32Array(buf, 0, 1);
 view[0] = 256;
@@ -230,10 +243,11 @@ console.log(view[0]);
 ```
 #### 创建一个空View对象
 
-第二种构造函数用于创建一个预定义长度为 **n** 的空View对象,这个形式的构造函数还创建了一个足够大的`ArrayBuffer`对象来容纳 **n** 个View元素. 例如, 清单8-18创建了一个空的`Float32Array` View来容纳2个浮点数. 在这个构造函数的幕后,还创建了一个长度为8字节的`ArrayBuffer`对象来容纳这两个浮点数. 在构造过程中, `ArrayBuffer`的所有字节被初始化为 **0**.
+第二种构造函数用于创建一个预定义长度为 **n** 的空View对象,这个形式的构造函数还创建了一个足够大的`ArrayBuffer`对象来容纳 **n** 个View元素. 例如, [清单8-18](#listing-8-17)创建了一个空的`Float32Array` View来容纳2个浮点数. 在这个构造函数的幕后,还创建了一个长度为8字节的`ArrayBuffer`对象来容纳这两个浮点数. 在构造过程中, `ArrayBuffer`的所有字节被初始化为 **0**.
 
-清单 8-18. 创建一个空的 **Float32Array** View对象
-```javascript`
+清单8-18. 创建一个空的 **Float32Array** View对象
+
+```javascript` {#listing-8-18}
 var view = new Float32Array(2);
 ```
 
@@ -241,18 +255,19 @@ var view = new Float32Array(2);
 
 第三种形式的构造函数接受一个值数组用于填充View.数组中的值被转换为核实的数据类型,并存储在View中,此类构造函数还创建了一个全新的`ArrayBuffer`对象来容纳这些值.清单8-19显示了一个示例,用值 **1,2,3** 来填充一个`Uint16Array`
 
-清单 8-19. 从一个包含3个值的数组创建一个`Uint16Array`对象
-```javascript`
+清单8-19. 从一个包含3个值的数组创建一个`Uint16Array`对象
+
+```javascript` {#listing-8-19}
 var view = new Uint16Array([1, 2, 3]);
 ```
 
 #### 从其他View对象创建一个新的View对象
 
-~~The fourth version of the constructor is very similar to the third. The only difference is that instead of passing in a standard array, this version accepts another view as its only argument. The newly created view also instantiates its own backing ArrayBuffer—that is, the underlying data is not shared. Listing 8-20 shows how this version of the constructor is used in practice. In this example, a 4-byte ArrayBuffer is used to create an Int8Array view containing four numbers.The Int8Array view is then used to create a new Uint32Array view. The Uint32Array also contains four numbers,corresponding to the data in the Int8Array view. However, its underlying ArrayBuffer is 16 bytes long instead of 4.Of course, because the two views have different ArrayBuffers, updating one view does not affect the other.~~
+第四种构造函类似于第三种.唯一的不同是这类构造函数接受一个View作为唯一参数而不是一个数组. 新创建的View也初始化属于自己的后端ArrayBuffer, 其底层数据不和其他View共享. 清单8-20说明了这个版本的构造函数如如何使用. 在这个示例中, 一个4字节的`ArrayBuffer`用于创建一个`Int8Array` View来包含4个数字. `Int8Array` View然后用于创建一个新的`Uint32Array`View,`Uint32Array`也包含四个数字.但是其底层的`ArrayBuffer`是16个字节长度而不是4, 所以这两个View有不同的`ArrayBuffer`,修改其中一个不会影响另外一个.
 
 清单 8-20. 从 **Int8Array** 创建一个 **Uint32Array**
 
-```javascript`
+```javascript` {#listing-8-20}
 var buf = new ArrayBuffer(4);
 var view1 = new Int8Array(buf);
 var view2 = new Uint32Array(view1);
@@ -263,14 +278,15 @@ console.log(view2.byteLength); // 16
 
 #### View属性
 
-You’ve already seen that a view’s `ArrayBuffer` can be accessed via the buffer property and that the `BYTES_PER_ELEMENT` property represents the number of bytes per view element. Views also have two properties, `byteLength` and length, related to the data size, and a `byteOffset` property indicating the first byte of a buffer used by the view.
+你已经知道, 一个View的底层`ArrayBuffer`对象可以通过其属性`buffer`访问, 其`BYTES_PER_ELEMENT`属性表示 **每个View元素** 的字节长度. View还有`byteLength`和`length`属性, 以及一个`byteOffset`属性表示View对象在底层`buffer`上的其实偏移量.
 
 #### byteLength
-The `byteLength` property represents the view’s data size in bytes. This value is not necessarily equal to the `byteLength` property of the underlying `ArrayBuffer`. In the example of this case, shown in Listing 8-21, an `Int16Array` view is built from a 10-byte `ArrayBuffer`. However, because the `Int16Array` constructor specifies that it is to contain only two integers, its `byteLength` property is 4, while the `ArrayBuffer`’s `byteLength` is 10.
 
-清单 8-21. Differing byteLengths of a View and Its ArrayBuffer
+`byteLength` 属性表示View的字节数据长度. 其值不需要等于底层`ArrayBuffer`的`byteLength`属性. 在[清单8-21](#listing-8-21)这个例子中, 一个`Int16Array`View是从一个10字节长的`ArrayBuffer`对象创建的. 因为`Int16Array`构造函数指明了其仅包含2个整数, 因此它的`byteLength`为4, 而`ArrayBuffer`的`byteLength`为10.
 
-```javascript`
+清单 8-21. **View** 对象的 **byteLength** 与其底层的 **ArrayBuffer** 对象的 **byteLength** 的区别
+
+```javascript` {#listing-8-21}
 var buf = new ArrayBuffer(10);
 var view = new Int16Array(buf, 0, 2);
 console.log(buf.byteLength);
@@ -278,11 +294,13 @@ console.log(view.byteLength);
 ```
 
 #### length
-The length property, which works like that of a standard array, indicates the number of data elements in the view.This property is useful for looping over the view’s data, as shown in Listing 8-22. 
 
-清单 8-22. Looping over View Data Using the length Property var view = new Int32Array([5, 10]);
+`length`属性,类似于标准的数字, 表示在View中的元素数量. 如[清单8-22](#listing-8-22)所示, `length`属性通常用于遍历View对象中的元素.
 
-```javascript`
+清单 8-22. 使用 **length** 属性变量 **View** 的元素
+
+```javascript` {#listing-8-22}
+var view = new Int32Array([5, 10]);
 for (var i = 0, len = view.length; i < len; i++) {
     console.log(view[i]);
 }
@@ -290,11 +308,11 @@ for (var i = 0, len = view.length; i < len; i++) {
 
 #### byteOffset
 
-The `byteOffset` property specifies the offset into the `ArrayBuffer` corresponding to the first byte used by the view.This value is always 0, unless an offset was passed in as the second argument to the constructor (see Listing 8-17).The byteOffset can be used in conjunction with the byteLength property to loop over the bytes of the underlying `ArrayBuffer`. In the example in Listing 8-23, which shows how only the bytes used by a view can be looped over using `byteOffset` and byteLength, the source `ArrayBuffer` is 10 bytes long, but the view only uses bytes 4 through 7.
+`byteOffset` 属性指明了View对象在底层的`ArrayBuffer`上的首字节位置. 如果不在构造函数中指定, 其值总是为0 [清单8-17](#listing-8-17). `byteOffset`可以和`byteLength`属性组合使用,遍历底层的`ArrayBuffer`. 在[清单8-23](#listing-8-23)这个例子中, 阐述了如何通过`byteOffset`和`byteLength`属性遍历只有View使用的字节,底层的`ArrayBuffer`为10字节长, 但View只使用了4-7字节.
 
-清单 8-23. Looping over the Utilized Subset of Bytes in an ArrayBuffer
+清单 8-23. 遍历ArrayBuffer的子集
 
-```javascript
+```javascript {#listing-8-23}
 var buf = new ArrayBuffer(10);
 var view = new Int16Array(buf, 4, 2);
 var len = view.byteOffset + view.byteLength;
@@ -307,42 +325,44 @@ for (var i = view.byteOffset; i < len; i++) {
 
 #### get()
 
-The `get()` method is used to retrieve the data value at a given index in the view. However, as you’ve already seen, the same task can be accomplished using array index notation, which requires fewer characters. If you elect to use `get()` for whatever reason, an example of its usage is shown in Listing 8-24.
+`get()`方法用于获取View中给定索引的数据值, 也可以使用数组下标的方式获取,如[清单8-24](#listing-8-24)所示,使用`get()`来获取`View`对象中第一个元素`view[0]`的值.
 
-清单 8-24. Using the View get() Method
+清单 8-24. 使用`View`的`get()`方法
 
-```javascript`
+```javascript` {#listing-8-24}
 var view = new Uint8ClampedArray([5]);
 console.log(view.get(0));
 // could also use view[0]
 ```
 
 #### set()
-`set()` is used to assign one or more values in the view. To assign a single value, pass the index to write, followed by the value to write as an argument to set() (you can also accomplish this using array index notation). An example assigning the value 3.14 to the fourth view element is shown in Listing 8-25.
 
-清单 8-25. Assigning a Single Value Using set()
+`set()` 用作给一个或多的View中的元素赋值. 要给单个元素赋值,直接传递索引和值给`set()`方法. 也可以使用数组索引的方式赋值. 在[清单8-25](#listing-8-25)示例中, 值 **3.14** 被赋值给View的第四个元素.
 
-```javascript`
+清单 8-25. 使用`set()`给View赋值
+
+```javascript` {#listing-8-25}
 var view = new Float64Array(4);
 view.set(3, 3.14);
 // could also use view[3] = 3.14
 ```
 
-In order to assign multiple values, `set()` also accepts arrays and views as its first argument. Optionally use this form of `set()` to provide a second argument that specifies the offset to begin writing values. If this offset is not included, `set()` begins writing values at the first index. In Listing 8-26, set() is used to populate all four elements of
-an `Int32Array`.
+`set()`还能接受一个数组或另一个View对象作为参数, 同时给多个元素赋值. 第二个可选参数为起始偏移量,用于指定从什么位置开始写. 如果不提供第二个参数, 默认从第一个索引位置开始写. 在[清单8-26](#listing-8-26)中, `set()`用于给`Int32Array`的所有元素赋值.
 
 清单 8-26. Assigning Multiple Values Using set()
 
-```javascript`
+```javascript` {#listing-8-26}
 var view = new Int32Array(4);
 view.set([1, 2, 3, 4], 0);
 ```
 
-There are two important things to know about this version of `set()`. First, an exception is thrown if you attempt to write past the end of the view. In the example in Listing 8-26, if the second argument had been larger than 0, the four-element boundary would have been exceeded, resulting in an error. Second, note that because `set()` accepts a view as its first argument, the argument’s `ArrayBuffer` might possibly be shared with the calling object. If the source and destination are the same, Node must intelligently copy the data such that bytes are not overwritten before they’ve had a chance to be copied. Listing 8-27 is an example of a scenario where two `Int8Array` views have the same `ArrayBuffer`. The second view, `view2`, is also smaller, representing the first half of the larger view, `view1`. When the call to `set()` occurs, 0 is assigned to **view1[1]**, and 1 is assigned to **view1[2]**. Since view1[1] is part of the source (as well as the destination in this operation), you need to ensure that the original value is copied before it is overwritten. 
+[^2]这个版本的`set()`需要注意两点: 第一, 如果写操作超出了View的尾部, 将抛出异常. 在[清单8-26](#listing-8-26)中,如果第二个参数大于0, 那么就会超出View的边界, 将导致错误. 第二, 因为`set()`也可以接受一个View作为它的第一个参数,两个View可能共享底层相同的`ArrayBuffer`对象, 如果是这种情况, Node必须智能的复制数据,以使某些字节在拷贝之前不会被覆盖.在[清单8-27](#listing-8-27)中, 两个`Int8Array`View对象共享同样的`ArrayBuffer`对象, 第二个View `view2`为`view1`的一半,表示为`view1`的前半部分. 当调用`set()`的时候,`view2`的第一个元素值 **0** 被赋值给 **view1[1]**, `view2`的第二个元素值被赋值给**view1[2]**,在这个操作中,因为`view1[1]`是复制源`view2`(以及复制目标`view1`)的一部分, 你需要保证原来的值在被覆盖之前拷贝出来.
 
-清单 8-27. Showing Where a Single **ArrayBuffer** Is Shared in **set()**
 
-```javascript`
+
+清单 8-27. 单个`ArrayBuffer`被多个View对象共享`set()`操作
+
+```javascript` {#listing-8-27}
 var buf = new ArrayBuffer(4);
 var view1 = new Int8Array(buf);
 var view2 = new Int8Array(buf, 0, 2);
@@ -669,4 +689,4 @@ A lot of material has been covered in this chapter. Starting with an overview of
 
 [^1]: Node中Buffer类型的slice()方法和JavaScript的`ArrayBuffer`类型的slice方法在语义上有很大的区别,Node中Buffer类型的slide()返回的是一个引用(类似指针),对其修改将会同时修改原始的Buffer对象, 而`ArrayBuffer`通过slice()方法调用创建的是一个全新的`ArrayBuffer`对象,此对象拥有独立的内存空间,使用的时候请特别注意这两者的区别.
 
-
+[^2]: 译者注: 仔细阅读本段落,两个不同的`View`共享相同的底层`ArrayBuffer`的情况有些复杂
