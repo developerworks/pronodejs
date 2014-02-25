@@ -297,7 +297,7 @@ console.log(view.byteLength);
 
 `length`属性,类似于标准的数字, 表示在View中的元素数量. 如[清单8-22](#listing-8-22)所示, `length`属性通常用于遍历View对象中的元素.
 
-清单 8-22. 使用 **length** 属性变量 **View** 的元素
+清单 8-22. 使用 **length** 属性遍历 **View** 的元素
 
 ```javascript` {#listing-8-22}
 var view = new Int32Array([5, 10]);
