@@ -128,7 +128,7 @@ console.log(bar);
 
 ### ArrayBuffer Views
 
-直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来删除View是如何工作的
+直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来阐述View是如何工作的
 
 
 表格 8-1: JavaScript’的个中ArrayBuffer View描述 
@@ -136,7 +136,7 @@ console.log(bar);
 <span id="table-8-1"></span>
 View Type         | Element Size (Bytes) | Description 
 ------------------| -------------------- | -----------
-Int8Array         | 1                    | Array of 8-bit signed integers.
+Int8Array         | 1                    | 8位有符号整数数组.
 Uint8Array        | 1                    | Array of 8-bit unsigned integers.
 Uint8ClampedArray | 1                    | Array of 8-bit unsigned integers. Values are clamped to be in the 0–255 range.
 Int16Array        | 2                    | Array of 16-bit signed integers.
