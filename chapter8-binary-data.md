@@ -128,10 +128,10 @@ console.log(bar);
 
 ### ArrayBuffer Views
 
-直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来删除View是如何工作的
+直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来阐述View是如何工作的
 
 
-表格 8-1: JavaScript’的个中ArrayBuffer View描述 
+表格 8-1: 下表是各种类型的View的说明 
 
 <span id="table-8-1"></span>
 View Type         | Element Size (Bytes) | Description 
@@ -145,10 +145,8 @@ Int32Array        | 4                    | Array of 32-bit signed integers.
 Uint32Array       | 4                    | Array of 32-bit unsigned integers.
 Float32Array      | 4                    | Array of 32-bit IEEE floating point numbers.
 Float64Array      | 8                    | Array of 64-bit IEEE floating-point numbers.
-{#table-8-1}
 
-
-**Note**
+**注意**
 
 虽然 `Uint8Array` 和 `Uint8ClampedArray` 非常相似,但却有一个关键的差异,这个差异表现在超过0-255这个值域时如何处理. `UInt8Array` 在处理超过255的值时: 255, 256, 257 被解释为 255, 0, 1. `Uint8ClampedArray` 的行为则不同,任何大于255的值被重置为255,任何小于0的值被重置为0, 那么对于 `Uint8ClampedArray` : 255, 256, 257 被解释为 255, 255,255.
 
@@ -163,7 +161,7 @@ view[1] = 256;
 console.log(view);
 ```
 
-[清单8-14](#listing-8-14) 显示了输出结果(我对结果作了一下格式化,使代码更加工整一些),头两行显示了写入到View中的值,100,256.接下来是一个`BYTES_PER_ELEMENT`属性,这是一个只读属性,包含在每个View对象中,表示View中的每个元素的原始字节长度,紧接着`BYTES_PER_ELEMENT`的是几个View对象的方法.
+[清单8-14](#listing-8-14) 显示了输出结果 (我对结果作了一下格式化,使代码更加工整一些), 头两行显示了写入到View中的值,100,256. 接下来是一个`BYTES_PER_ELEMENT`属性, 这是一个只读属性, 包含在每个View对象中, 表示View中的每个元素的原始字节长度, 紧接着`BYTES_PER_ELEMENT`的是几个View对象的方法.
 
 清单 8-14: 运行[清单8-13](#listing-8-13)的输出
 
@@ -231,6 +229,8 @@ Uint32 = 356
 #### 构造函数
 
 ~~Each type of view has four constructors. One form, which you’ve already seen, takes an `ArrayBuffer` as its first argument. This constructor function can also optionally specify both a starting byte offset in the ArrayBuffer and the view’s length. The byte offset defaults to 0 and __*must*__ be a multiple of BYTES_PER_ELEMENT, or else a `RangeError` exception is thrown. If omitted, the length will try to consume the entire ArrayBuffer, starting at the byte offset. These arguments, if specified, allow the view to be based on a piece of the ArrayBuffer instead of the entire thing. This is especially useful if the ArrayBuffer length is not an exact multiple of the view’s BYTES_PER_ELEMENT. In the example in Listing 8-17, which shows how a view can be constructed from a buffer whose size is not an exact multiple of `BYTES_PER_ELEMENT`, an `Int32Array` view is built on a 5-byte ArrayBuffer. The byte offset of 0 indicates that the view should begin at the first byte of the ArrayBuffer. Meanwhile, the length argument specifies that the view should contain a single integer. Without these arguments, it would not be possible to construct the view from this ArrayBuffer. Also, notice that the example contains a write to the byte at `buf[4]`. Since the view uses only the first four bytes, this write to the fifth byte does not alter the data in the view.~~
+
+每种View类型都有4种构造函数. 第一种已经见过, 接受一个 `ArrayBuffer` 作为构造函数的第一个参数, 可选地接受一个`ArrayBuffer`的**起始偏移量**和View的长度. 此偏移量默认为 **0**, 并且**必须**是 `BYTES_PER_ELEMENT` 的倍数, 否则将抛出一个 `RangeError` 异常. 如果不指定长度, 将使用从偏移量开的所有字节.
 
 清单 8-17. 构造一个基于ArrayBuffer部分数据的View 
 
