@@ -1,9 +1,53 @@
-<style>
-table th {
-    width:200px;
-}
-</style>
-[TOC]
+
+
+# 二进制数据概述
+
+二进制数据究竟是什么? **"在计算机中, 所有的数据都是二进制数据"**, 计算机的每一段数据都是以二进制形式存储 - 标识二进制数字和布尔(Boolean)逻辑值的一系列1和0. 当术语 **二进制数据** 用于编程语言环境中时, 它标识没有额外抽象和结构的数据. 例如, [清单8-1](#listing-8-1) 中一个简单的JSON对象. 此对象被认为是一个JSON对象是应为它包含特定的语法. 所有需要的花括号, 双引号, 冒号确保了它使一个有效的JSON对象.
+
+清单 8-1. 一个简单的JSON对象
+
+```Javascript` {#listing-8-1}
+{"foo": "bar"}
+```
+
+You could also view the example as simply a series of characters. In this case, the braces suddenly lose semantic importance. Instead of marking the beginning and end of a JSON object, the braces are simply two more characters in a string. Replacing them with any other characters would make no difference. Ultimately, you have a string containing 14 characters that just so happen to conform to JSON syntax. However, the data is still being interpreted as text, not as true binary data.
+In dealing with text, pieces of data are defined in terms of characters. For example, the string in Listing 8-1 is 14 characters long. In dealing with binary data, one speaks of bytes, or octets. For bytes to be interpreted as text, some type of character encoding must be used. Depending on the type of encoding, there may or may not be one-to-one mapping of characters to bytes.
+
+**注意**
+
+Note An octet is an 8-bit piece of data. The term byte is also commonly used to describe 8-bit data. However, historically the byte has not always been 8 bits. This book assumes the common 8-bit definition of byte and uses the term interchangeably with octet.
+
+Node supports a number of character encodings but normally defaults to UTF-8. UTF-8 is a variable-width encoding that is backward-compatible with ASCII, but it can also represent all Unicode characters. Since UTF-8 encoding is variable-width, some characters are represented using a single byte, but many are not. More specifically, a single UTF-8 character can require between 1 and 4 bytes.
+
+Listing 8-2 shows the string from Listing 8-1 represented as binary data. Since they consist of long strings of ones (1) and zeros (0), binary data is often displayed using hexadecimal notation, in which each digit represents
+4 bits. Therefore, each pair of hex digits represents an octet. In this example, each textual character is UTF-8 encoded as a single byte. Therefore, Listing 8-2 contains 14 bytes. By examining the value of each byte, you can begin to see a pattern in the mapping to characters. For example, the byte value **22** occurs four times—where the quotation marks are located in Listing 8-1. The value **6f**, corresponding to the "oo" in "**foo**", also occurs two times in a row.
+
+清单 8-2. The String in Listing 8-1 Represented As Binary Data Written in Hexadecimal
+
+```javascript
+7b 22 66 6f 6f 22 3a 20 22 62 61 72 22 7d
+```
+
+In the last example, each text character conveniently mapped to a single byte. However, this may not always happen. For example, consider the snowman Unicode character (see Listing 8-3), which although rarely used, is perfectly valid string data in JavaScript. Listing 8-4 shows the binary representation of the snowman. Notice that 3 bytes are required to represent this single character in UTF-8 encoding.
+
+清单 8-3. Unicode 雪人字符
+
+```javascript
+☃
+```
+
+清单 8-4. 雪人字符的二进制表示
+
+```javascript
+e2 98 83
+```
+
+## 字节顺序
+
+Another subject that sometimes arises when dealing with binary data is endianness. Endianness refers to the way a given machine stores data in memory, and comes into play when storing multibyte data such as integers and floating-point numbers. The two most common types of endianness are *big-endian* and *little-endian*. A big-endian machine stores a data item’s most significant byte first. In this case, “first” refers to the lowest memory address. A *little-endian* machine, on the other hand, stores the least significant byte in the lowest memory address. To illustrate the difference between big-endian and little-endian storage, let’s examine how the number 1 is stored in each scheme. Figure 8-1 shows the number 1 encoded as a 32-bit unsigned integer. The most significant and least significant bytes are labeled for your convenience. Since the data’s length is 32 bits, 4 bytes are required to store the data in memory.
+
+
+图 8-1. 数字1, 编码为32位无符号整数, 以16进制显示
 
 ## 判定字节顺序
 
@@ -15,7 +59,7 @@ table th {
 var os = require("os");
 console.log(os.endianness());
 ```
-    
+
 ## 8.2 类型化的数组规范(Typed Array Specification)
 
 在阐述Node中的二进制数据处理方式之前,先来了解一下标准的Javascript是如何处理二进制数据的. 这种方式被成为Typed Array Specification, 和普通的JavaScript变量不同,二进制数据数组有一个在运行时不能改变的类型, 因为Typed Array Specification作为JavaScript语言的一部分, 它是能在大多数浏览器中工作的, 具体要看浏览器是否实现了这个特性.
@@ -29,7 +73,7 @@ JavaScript的二进制数据API包括两部分: 一个Buffer, 以及一个View, 
 ```javascript {#listing-8-6}
 var buffer = new ArrayBuffer(1024);
 ```
-    
+
 `ArrayBuffer` 的工作方式类似与普通的Javascript数组.使用数组下标读写单个字节.因为 `ArrayBuffer` 不能修改大小, 向 **不存在的数组索引** 写数据不会实际修改底层的数据结构, 这个错误会被JavaScript引擎自动忽略, 来看下面 [清单8-7](#listing-8-7) 中的代码
 
 清单 8-7: 写入ArrayBuffer并输出结果
@@ -54,7 +98,7 @@ console.log(buffer);
 
 
 清单 8-9: 用byteLength属性遍历ArrayBuffer的每一个字节
-    
+
 ```javascript
 var foo = new ArrayBuffer(4);
 foo[0] = 0;
@@ -65,7 +109,7 @@ for (var i = 0, len = foo.byteLength; i < len; i++) {
     console.log(foo[i]);
 }
 ```
-    
+
 #### 8.2.1.1 Slice()
 
 可以使用`ArrayBuffer.slice(int start, int end)`方法从ArrayBuffer拷贝一个新的ArrayBuffer, slice()方法有两个参数:起始位置(包括)和结束位置(不包括), 这两个参数定义了要拷贝的范围
@@ -108,33 +152,33 @@ console.log(bar);
 清单 8-12: 运行[清单8-11](#listing-8-11)的输出
 
 ```javascript {#listing-8-11}
-{ 
+{
     '0': 0,
     '1': 1,
     '2': 2,
     '3': 3,
     slice: [Function: slice],
-    byteLength: 4 
+    byteLength: 4
 }
-{ 
+{
     '0': 12,
     '1': 1,
     '2': 2,
     '3': 3,
     slice: [Function: slice],
-    byteLength: 4 
+    byteLength: 4
 }
-```  
+```
 
 ### ArrayBuffer Views
 
 直接处理字节数组是一个大麻烦. 在`ArrayBuffer`上添加一个抽象层(这个抽象层被称作View)来操作数据, [表8-1](#table-8-1)给出一个示例来阐述View是如何工作的
 
 
-表格 8-1: 下表是各种类型的View的说明 
+表格 8-1: 下表是各种类型的View的说明
 
 <span id="table-8-1"></span>
-View Type         | Element Size (Bytes) | Description 
+View Type         | Element Size (Bytes) | Description
 ------------------| -------------------- | -----------
 Int8Array         | 1                    | Array of 8-bit signed integers.
 Uint8Array        | 1                    | Array of 8-bit unsigned integers.
@@ -166,7 +210,7 @@ console.log(view);
 清单 8-14: 运行[清单8-13](#listing-8-13)的输出
 
 ```javascript {#listing-8-14}
-{ 
+{
     '0': 100,
     '1': 256,
     BYTES_PER_ELEMENT: 4,
@@ -174,7 +218,7 @@ console.log(view);
     set: [Function: set],
     slice: [Function: slice],
     subarray: [Function: subarray],
-    buffer:{ 
+    buffer:{
         '0': 100,
         '1': 0,
         '2': 0,
@@ -184,13 +228,13 @@ console.log(view);
         '6': 0,
         '7': 0,
         slice: [Function: slice],
-        byteLength: 8 
+        byteLength: 8
     },
     length: 2,
     byteOffset: 0,
-    byteLength: 8 
+    byteLength: 8
 }
-```    
+```
 
 底层的ArrayBuffer对象被显示为buffer属性.在这个例子中0-3字节表示100,4-7字节表示256.
 
@@ -232,7 +276,7 @@ Uint32 = 356
 
 每种View类型都有4种构造函数. 第一种已经见过, 接受一个 `ArrayBuffer` 作为构造函数的第一个参数, 可选地接受一个`ArrayBuffer`的**起始偏移量**和View的长度. 此偏移量默认为 **0**, 并且**必须**是 `BYTES_PER_ELEMENT` 的倍数, 否则将抛出一个 `RangeError` 异常. 如果不指定长度, 将使用从偏移量开的所有字节.
 
-清单 8-17. 构造一个基于ArrayBuffer部分数据的View 
+清单 8-17. 构造一个基于ArrayBuffer部分数据的View
 
 ```javascript` {#listing-8-17}
 var buf = new ArrayBuffer(5);
@@ -374,18 +418,18 @@ view1.set(view2, 1);
 console.log(view1.buffer);
 ```
 
-According to the specification, "**setting the values takes place as if all the data is first copied into a temporary buffer that does not overlap either of the arrays, and then the data from the temporary buffer is copied into the current array**." Essentially, this means that Node takes care of everything for you. To verify this, the resulting output from the previous example is shown in Listing 8-28. Notice that bytes 1 and 2 hold the correct values of 0 and 1. 
+According to the specification, "**setting the values takes place as if all the data is first copied into a temporary buffer that does not overlap either of the arrays, and then the data from the temporary buffer is copied into the current array**." Essentially, this means that Node takes care of everything for you. To verify this, the resulting output from the previous example is shown in Listing 8-28. Notice that bytes 1 and 2 hold the correct values of 0 and 1.
 
 清单 8-28. The Output from Running the Code in Listing 8-27
 
 ```javascript`
-{ 
+{
     '0': 0,
     '1': 0,
     '2': 1,
     '3': 3,
     slice: [Function: slice],
-    byteLength: 4 
+    byteLength: 4
 }
 ```
 
@@ -451,9 +495,9 @@ Listing 8-33. Creating a Buffer from a String
 var buf = new Buffer("foo");
 ```
 
-Earlier in this chapter, you learned that in order to convert from binary data to text, a character encoding must be specified. When a string is passed as the first argument to `Buffer()`, a second optional argument can be used to specify the encoding type. In Listing 8-33, no encoding is explicitly set, so UTF-8 is used by default. Table 8-2 breaks down the various character encodings supported by Node. (The astute reader might recognize this table from Chapter 5. However, it is worth repeating the information at this point in the book.) 
+Earlier in this chapter, you learned that in order to convert from binary data to text, a character encoding must be specified. When a string is passed as the first argument to `Buffer()`, a second optional argument can be used to specify the encoding type. In Listing 8-33, no encoding is explicitly set, so UTF-8 is used by default. Table 8-2 breaks down the various character encodings supported by Node. (The astute reader might recognize this table from Chapter 5. However, it is worth repeating the information at this point in the book.)
 
-表格 8-2. The Various String Encoding Types Supported by Node 
+表格 8-2. The Various String Encoding Types Supported by Node
 
 
 Encoding Type   | Description
@@ -478,7 +522,7 @@ var buf = new Buffer("foo");
 console.log(buf.toString());
 ```
 
-The second stringification method, `toJSON()`, returns the Buffer data as a JSON array of bytes. You get a similar result by calling `JSON.stringify()` on the `Buffer` object. Listing 8-35 shows an example of the `toJSON()` method. 
+The second stringification method, `toJSON()`, returns the Buffer data as a JSON array of bytes. You get a similar result by calling `JSON.stringify()` on the `Buffer` object. Listing 8-35 shows an example of the `toJSON()` method.
 
 清单 8-35. Using the Buffer.toJSON() Method
 
@@ -489,7 +533,7 @@ console.log(JSON.stringify(buf));
 ```
 
 ### Buffer.isEncoding()
-The `isEncoding()` method is a class method (i.e., a specific instance is not needed to invoke it) that accepts a string as its only argument and returns a Boolean indicating whether the input is a valid encoding type. Listing 8-36 shows two examples of `isEncoding()`. The first tests the string "`utf8`" and displays true. The second, however, prints false because "`foo`" is not a valid character encoding. 
+The `isEncoding()` method is a class method (i.e., a specific instance is not needed to invoke it) that accepts a string as its only argument and returns a Boolean indicating whether the input is a valid encoding type. Listing 8-36 shows two examples of `isEncoding()`. The first tests the string "`utf8`" and displays true. The second, however, prints false because "`foo`" is not a valid character encoding.
 
 清单 8-36. Two Examples of the Buffer.isEncoding() Class Method
 
@@ -500,7 +544,7 @@ console.log(Buffer.isEncoding("foo"));
 
 ### Buffer.isBuffer()
 
-The class method `isBuffer()` is used to determine whether a piece of data is a `Buffer` object. It is used in the same fashion as the `Array.isArray()` method. Listing 8-37 shows an example use of `isBuffer()`. This example prints true because the buf variable is, in fact, a `Buffer`. 
+The class method `isBuffer()` is used to determine whether a piece of data is a `Buffer` object. It is used in the same fashion as the `Array.isArray()` method. Listing 8-37 shows an example use of `isBuffer()`. This example prints true because the buf variable is, in fact, a `Buffer`.
 
 清单 8-37. The Buffer.isBuffer() Class Method
 
@@ -575,7 +619,7 @@ writeFloatBE()   | Writes a 32-bit floating-point number using big-endian format
 writeDoubleLE()  | Writes a 64-bit floating-point number using little-endian format.
 writeDoubleBE()  | Writes a 64-bit floating-point number using big-endian format.
 
-All the methods in Table 8-3 take three arguments—the data to write, the offset in the `Buffer` to write the data, and an optional flag to turn off validation checking. If the validation flag is set to `false` (the default), an exception is thrown if the value is too large or the data overflows the `Buffer`. If this flag is set to true, large values are truncated, and overflow writes fail silently. In the example using `writeDoubleLE()` in Listing 8-41, the value 3.14 is written to the first 8 bytes of a `Buffer`, with no validation checking. 
+All the methods in Table 8-3 take three arguments—the data to write, the offset in the `Buffer` to write the data, and an optional flag to turn off validation checking. If the validation flag is set to `false` (the default), an exception is thrown if the value is too large or the data overflows the `Buffer`. If this flag is set to true, large values are truncated, and overflow writes fail silently. In the example using `writeDoubleLE()` in Listing 8-41, the value 3.14 is written to the first 8 bytes of a `Buffer`, with no validation checking.
 
 清单 8-41. Using writeDoubleLE()
 
@@ -634,7 +678,7 @@ var buf2 = buf1.slice(0, 2);
 
 ### copy()
 
-The `copy()` method is used to copy data from one `Buffer` to another. The first argument to `copy()` is the destination Buffer. The second, if present, represents the starting index in the target to copy. The third and fourth arguments, if present, are the starting and ending indexes in the source `Buffer` to copy. An example that copies the full contents of one `Buffer` to another is shown in Listing 8-44. 
+The `copy()` method is used to copy data from one `Buffer` to another. The first argument to `copy()` is the destination Buffer. The second, if present, represents the starting index in the target to copy. The third and fourth arguments, if present, are the starting and ending indexes in the source `Buffer` to copy. An example that copies the full contents of one `Buffer` to another is shown in Listing 8-44.
 
 清单 8-44. Copying the Contents of One Buffer to Another Using copy()
 
@@ -646,7 +690,7 @@ buf1.copy(buf2, 0, 0, buf1.length);
 
 
 ### Buffer.concat()
-The `concat()` class method allows concatenation of multiple `Buffer`s into a single larger `Buffer`. The first argument to concat() is an array of `Buffer` objects to be concatenated. If no `Buffer`s are provided, `concat()` returns a zero-length `Buffer`. If a single `Buffer` is provided, a reference to that `Buffer` is returned. If multiple `Buffer`s are provided, a new `Buffer` is created. Listing 8-45 provides an example that concatenates two `Buffer` objects. 
+The `concat()` class method allows concatenation of multiple `Buffer`s into a single larger `Buffer`. The first argument to concat() is an array of `Buffer` objects to be concatenated. If no `Buffer`s are provided, `concat()` returns a zero-length `Buffer`. If a single `Buffer` is provided, a reference to that `Buffer` is returned. If multiple `Buffer`s are provided, a new `Buffer` is created. Listing 8-45 provides an example that concatenates two `Buffer` objects.
 
 清单 8-45. Concatenating Two Buffer Objects
 
