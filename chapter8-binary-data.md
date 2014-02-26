@@ -17,7 +17,7 @@ In dealing with text, pieces of data are defined in terms of characters. For exa
 
 **注意**
 
-Note An octet is an 8-bit piece of data. The term byte is also commonly used to describe 8-bit data. However, historically the byte has not always been 8 bits. This book assumes the common 8-bit definition of byte and uses the term interchangeably with octet.
+注意一个 octet 是一个8位数据片段. 术语字节通常也用于描述8位数据. 但是历史上字节不总是8位. 本书中所所提及的octet和字节的概念可互换使用.
 
 Node supports a number of character encodings but normally defaults to UTF-8. UTF-8 is a variable-width encoding that is backward-compatible with ASCII, but it can also represent all Unicode characters. Since UTF-8 encoding is variable-width, some characters are represented using a single byte, but many are not. More specifically, a single UTF-8 character can require between 1 and 4 bytes.
 
