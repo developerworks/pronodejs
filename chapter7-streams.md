@@ -1,0 +1,3 @@
+# 流 (Streams)
+
+Node makes extensive use of streams as a data transfer mechanism—for example, for reading and writing files and transmitting data over network sockets. Chapter 5 has already shown you the standard streams—stdin, stdout, and stderr. This chapter, which explores Node’s streams API in greater detail, presents the different types of streams, how they work, and their various applications. But before starting, you should be aware that the streams API, while an important part of the Node core, is listed as unstable in the official documentation.
